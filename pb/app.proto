@@ -1,0 +1,19 @@
+syntax = "proto3";
+option go_package = "github.com/frizinak/pg-grpc/pb";
+
+service App {
+    rpc Pages(PagesRequest) returns (stream Page) {}
+}
+
+message PagesRequest {}
+
+message Page {
+    string slug = 1;
+    string content = 2;
+    Author author = 3;
+}
+
+message Author {
+    string firstname = 1;
+    string lastname = 2;
+}

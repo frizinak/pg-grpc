@@ -1,0 +1,17 @@
+FROM ubuntu:24.04
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -q -y golang ca-certificates
+
+RUN mkdir /out
+VOLUME /out
+
+COPY go.mod go.mod
+COPY go.sum go.sum
+RUN go mod download
+
+COPY . .
+RUN go build -o client ./cmd/client
+RUN cp client /out/client
+
+ENTRYPOINT ["./client"]

@@ -1,0 +1,22 @@
+services:
+  server:
+    build: { context: ., dockerfile: .docker/app/Dockerfile.server }
+    links:
+      - db:docker.db
+    depends_on:
+      db:
+        condition: service_healthy
+  client:
+    build: { context: ., dockerfile: .docker/app/Dockerfile.client }
+    links:
+      - server:docker.server
+    depends_on:
+      - server
+  db:
+    build: .docker/db
+    volumes:
+      - db:/db
+
+volumes:
+  db: {}
+
