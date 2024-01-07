@@ -1,4 +1,7 @@
 services:
+  go:
+    build: { context: ., dockerfile: .docker/app/Dockerfile.go }
+    image: pg-grpc-go
   server:
     build: { context: ., dockerfile: .docker/app/Dockerfile.server }
     links:
@@ -6,12 +9,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
   client:
     build: { context: ., dockerfile: .docker/app/Dockerfile.client }
     links:
       - server:docker.server
     depends_on:
       - server
+
   db:
     build: .docker/db
     volumes:

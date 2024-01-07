@@ -1,17 +1,5 @@
-FROM ubuntu:24.04
+FROM pg-grpc-go
 
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -q -y golang ca-certificates
-
-COPY go.mod go.sum ./
-
-ENV GOPATH=/go-cache
-ENV GOMODCACHE=/go-cache/mod
-ENV GOCACHE=/go-cache/cache
-
-RUN go mod download
-
-COPY . .
 RUN --mount=type=cache,target=/go-cache go build -o server ./cmd/server
 
 EXPOSE 8080
