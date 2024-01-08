@@ -2,9 +2,8 @@ package main
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
@@ -56,8 +55,8 @@ func atomicWrite(path string, cb func(io.Writer) error) error {
 	return os.Rename(tmp, path)
 }
 
-func priv(path string) (*ecdsa.PrivateKey, error) {
-	var pk *ecdsa.PrivateKey
+func priv(path string) (*rsa.PrivateKey, error) {
+	var pk *rsa.PrivateKey
 
 	f, err := os.Open(path)
 	if err == nil {
@@ -67,7 +66,7 @@ func priv(path string) (*ecdsa.PrivateKey, error) {
 			return nil, err
 		}
 		block, _ := pem.Decode(d)
-		return x509.ParseECPrivateKey(block.Bytes)
+		return x509.ParsePKCS1PrivateKey(block.Bytes)
 	}
 
 	if !os.IsNotExist(err) {
@@ -75,19 +74,16 @@ func priv(path string) (*ecdsa.PrivateKey, error) {
 	}
 
 	return pk, atomicWrite(path, func(w io.Writer) error {
-		ecpk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		rsapk, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
 			return err
 		}
 
-		pk = ecpk
+		pk = rsapk
 
-		pkb, err := x509.MarshalECPrivateKey(ecpk)
-		if err != nil {
-			return err
-		}
+		pkb := x509.MarshalPKCS1PrivateKey(rsapk)
 
-		return pem.Encode(w, &pem.Block{Type: "ECDSA PRIVATE KEY", Bytes: pkb})
+		return pem.Encode(w, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: pkb})
 	})
 }
 
@@ -110,14 +106,12 @@ func cert(path string, cert, ca *x509.Certificate, certKey crypto.PublicKey, caK
 }
 
 func main() {
-	dir := "./"
-	if len(os.Args) > 1 {
-		dir = os.Args[1]
-	}
+	domain := os.Args[1]
+	dir := os.Args[2]
 
-	c := &x509.Certificate{
+	ca := &x509.Certificate{
 		SerialNumber:          big.NewInt(5468645684645123),
-		Subject:               pkix.Name{Organization: []string{"PGGRPC Inc."}},
+		Subject:               pkix.Name{Organization: []string{"CA PGGRPC Inc."}},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(5, 0, 0),
 		IsCA:                  true,
@@ -126,7 +120,21 @@ func main() {
 		BasicConstraintsValid: true,
 	}
 
-	pk, err := priv(filepath.Join(dir, "cert.key"))
+	c := &x509.Certificate{
+		SerialNumber: big.NewInt(1234),
+		Subject:      pkix.Name{Organization: []string{"PGGRPC Inc."}},
+		DNSNames:     []string{domain},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(5, 0, 0),
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+
+	capk, err := priv(filepath.Join(dir, "ca.key"))
 	ex(err)
-	ex(cert(filepath.Join(dir, "cert.pem"), c, c, &pk.PublicKey, pk))
+	cpk, err := priv(filepath.Join(dir, "cert.key"))
+	ex(err)
+
+	ex(cert(filepath.Join(dir, "ca.pem"), ca, ca, &capk.PublicKey, capk))
+	ex(cert(filepath.Join(dir, "cert.pem"), c, ca, &cpk.PublicKey, capk))
 }

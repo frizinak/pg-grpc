@@ -1,0 +1,13 @@
+FROM pg-grpc-go
+
+RUN mkdir /certs
+
+VOLUME /certs-public
+VOLUME /certs-private
+
+ARG DB=db
+ENV DB=${DB}
+
+ENTRYPOINT go run ./cmd/cert $DB /certs-private && \
+    cp /certs-private/*.pem /certs-public && \
+    chmod 666 /certs-*/*
