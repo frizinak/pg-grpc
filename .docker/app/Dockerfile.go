@@ -3,6 +3,8 @@ FROM ubuntu:24.04
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -q -y golang ca-certificates protobuf-compiler
 
+WORKDIR /root
+
 COPY go.mod go.sum ./
 
 ENV GOPATH=/go-cache
