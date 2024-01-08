@@ -4,4 +4,7 @@ RUN --mount=type=cache,target=/go-cache go build -o server ./cmd/server
 
 EXPOSE 8080
 
-ENTRYPOINT ["./server"]
+ARG DB CA
+ENV DB=${DB} CA=${CA}
+
+ENTRYPOINT exec ./server ${DB} ${CA}

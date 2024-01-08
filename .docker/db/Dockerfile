@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -q -y postgresql ca-certificates
 
-RUN mkdir -p /db
+RUN mkdir /db
 WORKDIR /db
 
 RUN groupadd db && useradd -m -g db db
@@ -17,9 +17,9 @@ RUN chown -R db:db . && chmod -R 700 .
 RUN mkdir -p /var/run/pg
 RUN chown -R db:db /var/run/pg
 
-USER db:db
-
 VOLUME /db
+
+USER db:db
 
 EXPOSE 5432
 

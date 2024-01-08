@@ -23,6 +23,10 @@ if [ ! -f PG_VERSION ]; then
     "$bins/pg_ctl" initdb -D .
 fi
 
+mkdir ./certs 2>/dev/null || :
+cp /certs/* ./certs
+chmod 600 ./certs/*
+
 cp "$HOME/postgresql.conf" ./
 cp "$HOME/pg_hba.conf" ./
 "$bins/postgres" -D . &
@@ -34,7 +38,6 @@ while ! "$bins/pg_ctl" status -D . &>/dev/null; do
     sleep 0.2
 done
 
-        #"$bins/createuser" -h /var/run/pg db_user && \
 if [ $init -eq 1 ]; then
     echo "------------ DB INIT USER/DB"
     {

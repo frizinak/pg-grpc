@@ -61,10 +61,12 @@ func ex(err error) {
 
 func main() {
 	debug := true
-	host := "docker.db"
+	host := os.Args[1]
+	ca := os.Args[2]
+
 	pg, err := sql.Open(
 		"postgres",
-		fmt.Sprintf("user=db_user password=db_pass host=%s dbname=app sslmode=disable", host),
+		fmt.Sprintf("user=db_user password=db_pass host=%s dbname=app sslmode=verify-full sslrootcert=%s", host, ca),
 	)
 	ex(err)
 

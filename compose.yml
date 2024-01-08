@@ -2,26 +2,37 @@ services:
   go:
     build: { context: ., dockerfile: .docker/app/Dockerfile.go }
     image: pg-grpc-go
+
   server:
-    build: { context: ., dockerfile: .docker/app/Dockerfile.server }
-    links:
-      - db:docker.db
+    build:
+      context: .
+      dockerfile: .docker/app/Dockerfile.server
+      args: { DB: docker.db, CA: /certs/ca.pem }
+    links: [db:docker.db]
     depends_on:
-      db:
-        condition: service_healthy
+      cert: {condition: service_completed_successfully}
+      db:   {condition: service_healthy}
+    volumes: [cert-pub:/certs]
 
   client:
     build: { context: ., dockerfile: .docker/app/Dockerfile.client }
-    links:
-      - server:docker.server
-    depends_on:
-      - server
+    links: [server:docker.server]
+    depends_on: [server]
 
   db:
     build: .docker/db
-    volumes:
-      - db:/db
+    depends_on: {cert: {condition: service_completed_successfully}}
+    volumes: [db:/db, cert-priv:/certs]
+
+  cert:
+    build:
+      context: .
+      dockerfile: .docker/app/Dockerfile.cert
+      args: { DB: docker.db }
+    volumes: [cert-pub:/certs-public, cert-priv:/certs-private]
+    depends_on: [go]
 
 volumes:
   db: {}
-
+  cert-pub: {}
+  cert-priv: {}
